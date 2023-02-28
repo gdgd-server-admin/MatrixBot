@@ -1,31 +1,35 @@
- -*- coding: utf8 -*-
-
-'''
-
-このプログラムは
-
-asariとmlaskという２つのAIエンジンを使用して発言内容の感情を解析し、
-それが負の感情だと思われる時にアクションを起こすことで人間に通知する。
-
-'''
+# -*- coding: utf8 -*-
 
 from matrix_client.client import MatrixClient
 from asari.api import Sonar
 import time,datetime
 import numpy as np
+import os,configparser
+
+pid = open("satie.pid","w")
+pid.write(str(os.getpid()))
+pid.close()
 
 # Matrix接続設定
-MATRIX_URL = "https://smith.gdgd.jp.net"
-MATRIX_USER = "satie"
-MATRIX_PASS = "************************"
-MATRIX_ROOM = "#free-talk:smith.gdgd.jp.net"
-MY_NAME = "@satie:smith.gdgd.jp.net"
+config = configparser.ConfigParser()
+config.read("config.ini")
+MATRIX_URL = config["CONNECTION"]["URL"]
+MATRIX_USER = config["CONNECTION"]["USER"]
+MATRIX_PASS = config["CONNECTION"]["PASS"]
+MATRIX_ROOM = config["CONNECTION"]["ROOM"]
+MY_NAME = config["CONNECTION"]["MYNAME"]
 
 client = MatrixClient(MATRIX_URL)
 token = client.login(username=MATRIX_USER, password=MATRIX_PASS)
 room = client.join_room(MATRIX_ROOM)
 
 # AIエンジン
+from transformers import BertTokenizer, BertForSequenceClassification, pipeline
+
+tokenizer = BertTokenizer.from_pretrained("koheiduck/bert-japanese-finetuned-sentiment")
+model = BertForSequenceClassification.from_pretrained("koheiduck/bert-japanese-finetuned-sentiment")
+tokenizer2 = BertTokenizer.from_pretrained("kit-nlp/bert-base-japanese-sentiment-cyberbullying")
+model2 = BertForSequenceClassification.from_pretrained("kit-nlp/bert-base-japanese-sentiment-cyberbullying")
 sonar = Sonar()
 
 # 追加のAIエンジン
@@ -40,63 +44,72 @@ def on_message(room, event):
         if event['content']['msgtype'] == "m.text":                     # メッセージは文字で画像とか動画ではない
             if not event['sender'] == MY_NAME:                          # 送信者が自分「ではない」
                 msg = event['content']['body']
-                res = sonar.ping(text=msg)
-                top_class = res["top_class"]
+
                 score = 0
-                counter_score = 0
-                for i in res["classes"]:
-                    if i["class_name"] == top_class:
-                        score = i["confidence"]
-                    else:
-                        counter_score = i["confidence"]
+                ai_judge = []
+
+                # BERTでの判定
+                res_bert = pipeline("sentiment-analysis",model=model, tokenizer=tokenizer)(msg)[0]
+                print(res_bert)
+                if res_bert["label"].lower() == "positive":
+                    ai_judge.append(res_bert["score"])
+                elif res_bert["label"].lower() == "negative":
+                    ai_judge.append(res_bert["score"] * -1.0)
+
+                res_bert2 = pipeline("sentiment-analysis",model=model2, tokenizer=tokenizer2)(msg)[0]
+                print(res_bert2)
+                if res_bert2["label"].lower() == "ポジティブ":
+                    ai_judge.append(res_bert2["score"])
+                elif res_bert2["label"].lower() == "ネガティブ":
+                    ai_judge.append(res_bert2["score"] * -1.0)
+
+                # asariでの判定
+                res_asari = sonar.ping(text=msg)
+                _top_class = res_asari["top_class"]
+                for i in res_asari["classes"]:
+                    if i["class_name"] == _top_class:
+                        if _top_class == "positive":
+                            ai_judge.append(i["confidence"])
+                        elif _top_class == "negative":
+                            ai_judge.append(i["confidence"] * -1.0)
+
+                score = np.array(ai_judge).mean()
+                print(ai_judge)
+                print("score: {}".format(score))
 
                 # 今回のスコアを履歴へ
-                newscore = (score - counter_score) * 1.0
-                if top_class == "negative":
-                    newscore = newscore * -1.0
-
-                # mlaskを使って追加判定する
-                res = emotion_analyzer.analyze(msg)
-                if res["emotion"] != None:
-                    for i in res["emotion"]:
-                        if str(i) == "iya":
-                            newscore -= 0.1
-                        elif str(i) == "yorokobi":
-                            newscore += 0.1
-                        elif str(i) == "kowa":
-                            newscore -= 0.1
-                        elif str(i) == "yasu":
-                            newscore += 0.1
-                        elif str(i) == "aware":
-                            newscore -= 0.1
-                        elif str(i) == "suki":
-                            newscore += 0.1
-                        elif str(i) == "ikari":
-                            newscore -= 0.1
-                        elif str(i) == "takaburi":
-                            newscore += 0.1
-                        elif str(i) == "haji":
-                            newscore -= 0.1
-                        elif str(i) == "odoroki":
-                            newscore += 0.1
+                newscore = score
 
                 # 今回のスコアを履歴に入れて平均値計算に回す
                 score_hist.append(newscore)
 
+                print("{}[{}]->{}".format(event["sender"],event["event_id"],newscore))
                 # どう考えても酷いやつは個別に反応する
-                if newscore <= -0.7:
-                    room.send_text("{} めっ！だよ？".format(event['sender']))
+                if newscore < -0.9:
+                    room.send_text("{} こわいことばはいけないんだよ？".format(event['sender']))
+
+                # 0.8くらいを超えたらスマイリーをつけたい
+                # https://smith.gdgd.jp.net/_matrix/client/r0/rooms/!MgzQcYvBdERYCDfJZi:smith.gdgd.jp.net/send/m.reaction/m1677225314318.0
+                if newscore > 0.9:
+                    reaction_content = {}
+                    reaction_content["m.relates_to"] = {}
+                    reaction_content["m.relates_to"]["rel_type"] = "m.annotation"
+                    reaction_content["m.relates_to"]["event_id"] = event["event_id"]
+                    reaction_content["m.relates_to"]["key"] = "😄"
+
+                    client.api.send_message_event(event["room_id"], "m.reaction", reaction_content)
+
 
                 # 履歴に一定の件数が溜まっている時にだけネガポジ判定を行う
                 if len(score_hist) > 5:
-                    # 平均値を算出して-0.50を超えたらまずい空気だと思う
+                    # 平均値を算出して-70を超えたらまずい空気だと思う
                     average = np.array(score_hist).mean()
                     print("avg: {}".format(average))
-                    if average < -0.50:
+                    if average < -0.6:
                         room.send_text("@room このおへやこわいよぅ...")
 
                 if len(score_hist) > 10:
-                    # 100件超えたら先頭を１個消す
+                    # 10件超えたら先頭を１個消す
                     score_hist.pop(0)
 
 
@@ -111,5 +124,3 @@ while True:
         break                               # ループを抜ける
 
 # プログラム終了
-
-
