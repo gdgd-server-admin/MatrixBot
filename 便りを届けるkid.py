@@ -23,7 +23,8 @@ room = client.join_room(MATRIX_ROOM)
 # タイムスケジュールに記載されているURLからニュースを取得する
 url = ""
 
-d = datetime.datetime.now()
+JST = datetime.timezone(datetime.timedelta(hours=+9), 'JST')
+d = datetime.datetime.now(JST)
 now = "{:0>2}{:0>2}".format(d.hour,int(d.minute / 10)*10) # 現在時刻を４けたの数字にして10分単位にする
 
 # 20:22なら「 2020 」になる
@@ -77,7 +78,7 @@ schedule["0710"] = "https://assets.wor.jp/rss/rdf/ynnews/news.rdf" # よんな�
 schedule["0720"] = "https://assets.wor.jp/rss/rdf/maidona/new.rdf" # まいどなニュースの非公式RSS
 schedule["0730"] = "https://www.j-cast.com/index.xml" # J-CASTの総合RSS
 schedule["0740"] = "https://sportiva.shueisha.co.jp/rss.xml" # スポルティーバのRSS
-schedule["0750"] = ""
+schedule["0750"] = "https://news.yahoo.co.jp/rss/topics/top-picks.xml" # Yahooニュースの主要トピックスのRSS
 schedule["0800"] = ""
 schedule["0810"] = ""
 schedule["0820"] = "https://rocketnews24.com/feed/" # ロケットニュース24のRSS
@@ -90,14 +91,14 @@ schedule["0920"] = "https://rss.itmedia.co.jp/rss/2.0/netlab.xml" # ねとらぼ
 schedule["0930"] = ""
 schedule["0940"] = ""
 schedule["0950"] = ""
-schedule["1000"] = ""
+schedule["1000"] = "https://news.yahoo.co.jp/rss/media/inumag/all.xml"
 schedule["1010"] = ""
 schedule["1020"] = ""
 schedule["1030"] = "https://rocketnews24.com/feed/" # ロケットニュース24のRSS
-schedule["1040"] = ""
+schedule["1040"] = "https://news.yahoo.co.jp/rss/media/nekomag/all.xml"
 schedule["1050"] = ""
-schedule["1100"] = ""
-schedule["1110"] = ""
+schedule["1100"] = "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREpxYW5RU0FtcGhHZ0pLVUNnQVAB?hl=ja&gl=JP&ceid=JP:ja" # Googleニュースのエンタメカテゴリ>
+schedule["1110"] = "https://news.yahoo.co.jp/rss/topics/top-picks.xml" # Yahooニュースの主要トピックスのRSS
 schedule["1120"] = ""
 schedule["1130"] = ""
 schedule["1140"] = ""
@@ -107,14 +108,14 @@ schedule["1210"] = "https://assets.wor.jp/rss/rdf/ynnews/news.rdf" # よんな�
 schedule["1220"] = "https://assets.wor.jp/rss/rdf/maidona/new.rdf" # まいどなニュースの非公式RSS
 schedule["1230"] = "https://www.j-cast.com/index.xml" # J-CASTの総合RSS
 schedule["1240"] = "https://sportiva.shueisha.co.jp/rss.xml" # スポルティーバのRSS
-schedule["1250"] = ""
+schedule["1250"] = "https://news.yahoo.co.jp/rss/media/biz_lifeh/all.xml"
 schedule["1300"] = ""
 schedule["1310"] = ""
 schedule["1320"] = ""
 schedule["1330"] = "https://rocketnews24.com/feed/" # ロケットニュース24のRSS
 schedule["1340"] = ""
 schedule["1350"] = ""
-schedule["1400"] = ""
+schedule["1400"] = "https://news.yahoo.co.jp/rss/topics/top-picks.xml" # Yahooニュースの主要トピックスのRSS
 schedule["1410"] = ""
 schedule["1420"] = ""
 schedule["1430"] = ""
@@ -123,30 +124,30 @@ schedule["1450"] = "https://rss.itmedia.co.jp/rss/2.0/netlab.xml" # ねとらぼ
 schedule["1500"] = "https://www.gizmodo.jp/index.xml" # ギズモードのRSS
 schedule["1510"] = "https://rss.itmedia.co.jp/rss/2.0/topstory.xml" # ITmediaの総合RSS
 schedule["1520"] = "https://codezine.jp/rss/new/index.xml" # CodeZineのRSS
-schedule["1530"] = ""
+schedule["1530"] = "https://news.google.com/rss/topics/CAAqKAgKIiJDQkFTRXdvSkwyMHZNR1ptZHpWbUVnSnFZUm9DU2xBb0FBUAE?hl=ja&gl=JP&ceid=JP:ja" # Googleニュースのテクノロジー[>
 schedule["1540"] = ""
 schedule["1550"] = ""
 schedule["1600"] = "https://rocketnews24.com/feed/" # ロケットニュース24のRSS
 schedule["1610"] = ""
 schedule["1620"] = ""
-schedule["1630"] = ""
-schedule["1640"] = ""
-schedule["1650"] = ""
+schedule["1630"] = "https://news.yahoo.co.jp/rss/topics/top-picks.xml" # Yahooニュースの主要トピックスのRSS
+schedule["1640"] = "https://news.yahoo.co.jp/rss/media/nekomag/all.xml"
+schedule["1650"] = "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREpxYW5RU0FtcGhHZ0pLVUNnQVAB?hl=ja&gl=JP&ceid=JP:ja" # Googleニュースのエンタメカテゴリ>
 schedule["1700"] = "https://assets.wor.jp/rss/rdf/reuters/oddlyenough.rdf" # ロイターの非公式RSS
 schedule["1710"] = "https://assets.wor.jp/rss/rdf/ynnews/news.rdf" # よんななニュースの非公式RSS
 schedule["1720"] = "https://assets.wor.jp/rss/rdf/maidona/new.rdf" # まいどなニュースの非公式RSS
 schedule["1730"] = "https://www.j-cast.com/index.xml" # J-CASTの総合RSS
 schedule["1740"] = "https://sportiva.shueisha.co.jp/rss.xml" # スポルティーバのRSS
 schedule["1750"] = "https://rss.itmedia.co.jp/rss/2.0/netlab.xml" # ねとらぼのRSS
-schedule["1800"] = ""
+schedule["1800"] = "https://news.yahoo.co.jp/rss/media/inumag/all.xml"
 schedule["1810"] = ""
 schedule["1820"] = ""
-schedule["1830"] = ""
+schedule["1830"] = "https://news.yahoo.co.jp/rss/media/driverweb/all.xml"
 schedule["1840"] = ""
-schedule["1850"] = ""
+schedule["1850"] = "https://news.yahoo.co.jp/rss/media/biz_lifeh/all.xml"
 schedule["1900"] = ""
 schedule["1910"] = ""
-schedule["1920"] = ""
+schedule["1920"] = "https://news.yahoo.co.jp/rss/topics/top-picks.xml" # Yahooニュースの主要トピックスのRSS
 schedule["1930"] = ""
 schedule["1940"] = ""
 schedule["1950"] = ""
@@ -155,16 +156,16 @@ schedule["2010"] = ""
 schedule["2020"] = ""
 schedule["2030"] = ""
 schedule["2040"] = ""
-schedule["2050"] = ""
-schedule["2100"] = ""
-schedule["2110"] = ""
+schedule["2050"] = "https://news.yahoo.co.jp/rss/media/bikeno/all.xml"
+schedule["2100"] = "https://news.yahoo.co.jp/rss/media/baseballc/all.xml"
+schedule["2110"] = "https://news.yahoo.co.jp/rss/media/flix/all.xml"
 schedule["2120"] = ""
 schedule["2130"] = ""
 schedule["2140"] = ""
 schedule["2150"] = ""
-schedule["2200"] = ""
-schedule["2210"] = ""
-schedule["2220"] = ""
+schedule["2200"] = "https://news.yahoo.co.jp/rss/media/anmanmv/all.xml"
+schedule["2210"] = "https://news.yahoo.co.jp/rss/media/animage/all.xml"
+schedule["2220"] = "https://news.yahoo.co.jp/rss/media/animage/all.xml"
 schedule["2230"] = ""
 schedule["2240"] = ""
 schedule["2250"] = ""
@@ -174,6 +175,7 @@ schedule["2320"] = ""
 schedule["2330"] = ""
 schedule["2340"] = ""
 schedule["2350"] = ""
+
 
 # タイムスケジュールから該当する時刻に取得すべきURLを引き出そうと試みる（書き間違えてたりするとやばいことになるので「試みる」）
 try:
